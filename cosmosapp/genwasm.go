@@ -1,4 +1,4 @@
-package cosmoscmd
+package cosmosapp
 
 import (
 	"github.com/CosmWasm/wasmd/x/wasm"
@@ -8,6 +8,7 @@ import (
 	"strings"
 )
 
+// AddGenesisWasmMsgCmd returns add-wasm-genesis-message cobra Command.
 func AddGenesisWasmMsgCmd(defaultNodeHome string) *cobra.Command {
 	txCmd := &cobra.Command{
 		Use:                        "add-wasm-genesis-message",
