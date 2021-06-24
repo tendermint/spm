@@ -1,4 +1,4 @@
-package cosmoscmd
+package cosmosapp
 
 import (
 	"bufio"
