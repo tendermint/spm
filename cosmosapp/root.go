@@ -39,7 +39,7 @@ import (
 )
 
 type (
-	newAppFn func(
+	NewAppFn func(
 		logger log.Logger,
 		db dbm.DB,
 		traceStore io.Writer,
@@ -50,14 +50,14 @@ type (
 		encodingConfig EncodingConfig,
 		appOpts servertypes.AppOptions,
 		baseAppOptions ...func(*baseapp.BaseApp),
-	) rootApp
+	) RootApp
 
-	rootApp interface {
+	RootApp interface {
 		servertypes.Application
-		exportableApp
+		ExportableApp
 	}
 
-	exportableApp interface {
+	ExportableApp interface {
 		ExportAppStateAndValidators(
 			forZeroHeight bool,
 			jailAllowedAddrs []string,
@@ -65,9 +65,9 @@ type (
 		LoadHeight(height int64) error
 	}
 
-	appCreator struct {
+	AppCreator struct {
 		encCfg   EncodingConfig
-		newAppFn newAppFn
+		newAppFn NewAppFn
 	}
 )
 
@@ -79,7 +79,7 @@ func NewRootCmd(
 	defaultNodeHome,
 	chainID string,
 	moduleBasics module.BasicManager,
-	newAppFn newAppFn,
+	newAppFn NewAppFn,
 ) (*cobra.Command, EncodingConfig) {
 	// Set config for prefixes
 	SetPrefixes(accountAddressPrefix)
@@ -127,7 +127,7 @@ func initRootCmd(
 	encodingConfig EncodingConfig,
 	defaultNodeHome string,
 	moduleBasics module.BasicManager,
-	newAppFn newAppFn,
+	newAppFn NewAppFn,
 ) {
 	authclient.Codec = encodingConfig.Marshaler
 
@@ -149,7 +149,7 @@ func initRootCmd(
 		AddGenesisWasmMsgCmd(defaultNodeHome),
 	)
 
-	a := appCreator{
+	a := AppCreator{
 		encodingConfig,
 		newAppFn,
 	}
@@ -239,7 +239,7 @@ func overwriteFlagDefaults(c *cobra.Command, defaults map[string]string) {
 }
 
 // newApp is an AppCreator
-func (a appCreator) newApp(
+func (a AppCreator) newApp(
 	logger log.Logger,
 	db dbm.DB,
 	traceStore io.Writer,
@@ -302,7 +302,7 @@ func (a appCreator) newApp(
 }
 
 // appExport creates a new simapp (optionally at a given height)
-func (a appCreator) appExport(
+func (a AppCreator) appExport(
 	logger log.Logger,
 	db dbm.DB,
 	traceStore io.Writer,
@@ -312,7 +312,7 @@ func (a appCreator) appExport(
 	appOpts servertypes.AppOptions,
 ) (servertypes.ExportedApp, error) {
 
-	var exportableApp exportableApp
+	var exportableApp ExportableApp
 
 	homePath, ok := appOpts.Get(flags.FlagHome).(string)
 	if !ok || homePath == "" {
