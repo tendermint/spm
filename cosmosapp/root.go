@@ -4,19 +4,16 @@ import (
 	"errors"
 	"io"
 	"path/filepath"
+	"os"
 
-	"github.com/CosmWasm/wasmd/x/wasm"
 	"github.com/cosmos/cosmos-sdk/store"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/crisis"
-	"github.com/prometheus/client_golang/prometheus"
 	"github.com/spf13/cast"
 	"github.com/spf13/pflag"
 	tmcli "github.com/tendermint/tendermint/libs/cli"
 	"github.com/tendermint/tendermint/libs/log"
 	dbm "github.com/tendermint/tm-db"
-
-	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
 
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
@@ -35,11 +32,11 @@ import (
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	genutilcli "github.com/cosmos/cosmos-sdk/x/genutil/client/cli"
 	"github.com/spf13/cobra"
-	"os"
 )
 
 type (
-	NewAppFn func(
+	// AppBuilder is a method that allows to build an app
+	AppBuilder func(
 		logger log.Logger,
 		db dbm.DB,
 		traceStore io.Writer,
@@ -50,13 +47,15 @@ type (
 		encodingConfig EncodingConfig,
 		appOpts servertypes.AppOptions,
 		baseAppOptions ...func(*baseapp.BaseApp),
-	) RootApp
+	) App
 
-	RootApp interface {
+	// App represents a Cosmos SDK application that can be run as a server and with an exportable state
+	App interface {
 		servertypes.Application
 		ExportableApp
 	}
 
+	// ExportableApp represents an app with an exportable state
 	ExportableApp interface {
 		ExportAppStateAndValidators(
 			forZeroHeight bool,
@@ -65,21 +64,21 @@ type (
 		LoadHeight(height int64) error
 	}
 
-	AppCreator struct {
-		encCfg   EncodingConfig
-		newAppFn NewAppFn
+	// appCreator is an app creator
+	appCreator struct {
+		encodingConfig   EncodingConfig
+		buildApp AppBuilder
 	}
 )
 
-// NewRootCmd creates a new root command for simd. It is called once in the
-// main function.
+// NewRootCmd creates a new root command for a Cosmos SDK application
 func NewRootCmd(
 	appName,
 	accountAddressPrefix,
 	defaultNodeHome,
-	chainID string,
+	defaultChainID string,
 	moduleBasics module.BasicManager,
-	newAppFn NewAppFn,
+	buildApp AppBuilder,
 ) (*cobra.Command, EncodingConfig) {
 	// Set config for prefixes
 	SetPrefixes(accountAddressPrefix)
@@ -112,10 +111,10 @@ func NewRootCmd(
 		encodingConfig,
 		defaultNodeHome,
 		moduleBasics,
-		newAppFn,
+		buildApp,
 		)
 	overwriteFlagDefaults(rootCmd, map[string]string{
-		flags.FlagChainID:        chainID,
+		flags.FlagChainID:        defaultChainID,
 		flags.FlagKeyringBackend: "test",
 	})
 
@@ -127,7 +126,7 @@ func initRootCmd(
 	encodingConfig EncodingConfig,
 	defaultNodeHome string,
 	moduleBasics module.BasicManager,
-	newAppFn NewAppFn,
+	buildApp AppBuilder,
 ) {
 	authclient.Codec = encodingConfig.Marshaler
 
@@ -145,13 +144,11 @@ func initRootCmd(
 		AddGenesisAccountCmd(defaultNodeHome),
 		tmcli.NewCompletionCmd(rootCmd, true),
 		debug.Cmd(),
-		// this line is used by starport scaffolding # stargate/root/commands
-		AddGenesisWasmMsgCmd(defaultNodeHome),
 	)
 
-	a := AppCreator{
+	a := appCreator{
 		encodingConfig,
-		newAppFn,
+		buildApp,
 	}
 	server.AddCommands(rootCmd, defaultNodeHome, a.newApp, a.appExport, addModuleInitFlags)
 
@@ -218,8 +215,6 @@ func txCommand(moduleBasics module.BasicManager) *cobra.Command {
 
 func addModuleInitFlags(startCmd *cobra.Command) {
 	crisis.AddModuleInitFlags(startCmd)
-	// this line is used by starport scaffolding # stargate/root/initFlags
-	wasm.AddModuleInitFlags(startCmd)
 }
 
 func overwriteFlagDefaults(c *cobra.Command, defaults map[string]string) {
@@ -239,7 +234,7 @@ func overwriteFlagDefaults(c *cobra.Command, defaults map[string]string) {
 }
 
 // newApp is an AppCreator
-func (a AppCreator) newApp(
+func (a appCreator) newApp(
 	logger log.Logger,
 	db dbm.DB,
 	traceStore io.Writer,
@@ -271,13 +266,7 @@ func (a AppCreator) newApp(
 		panic(err)
 	}
 
-	// this line is used by starport scaffolding # stargate/root/appBeforeInit
-	var wasmOpts []wasm.Option
-	if cast.ToBool(appOpts.Get("telemetry.enabled")) {
-		wasmOpts = append(wasmOpts, wasmkeeper.WithVMCacheMetrics(prometheus.DefaultRegisterer))
-	}
-
-	return a.newAppFn(
+	return a.buildApp(
 		logger,
 		db,
 		traceStore,
@@ -285,7 +274,7 @@ func (a AppCreator) newApp(
 		skipUpgradeHeights,
 		cast.ToString(appOpts.Get(flags.FlagHome)),
 		cast.ToUint(appOpts.Get(server.FlagInvCheckPeriod)),
-		a.encCfg,
+		a.encodingConfig,
 		appOpts,
 		baseapp.SetPruning(pruningOpts),
 		baseapp.SetMinGasPrices(cast.ToString(appOpts.Get(server.FlagMinGasPrices))),
@@ -302,7 +291,7 @@ func (a AppCreator) newApp(
 }
 
 // appExport creates a new simapp (optionally at a given height)
-func (a AppCreator) appExport(
+func (a appCreator) appExport(
 	logger log.Logger,
 	db dbm.DB,
 	traceStore io.Writer,
@@ -320,7 +309,7 @@ func (a AppCreator) appExport(
 	}
 
 	if height != -1 {
-		exportableApp = a.newAppFn(
+		exportableApp = a.buildApp(
 			logger,
 			db,
 			traceStore,
@@ -328,7 +317,7 @@ func (a AppCreator) appExport(
 			map[int64]bool{},
 			homePath,
 			uint(1),
-			a.encCfg,
+			a.encodingConfig,
 			appOpts,
 		)
 
@@ -336,7 +325,7 @@ func (a AppCreator) appExport(
 			return servertypes.ExportedApp{}, err
 		}
 	} else {
-		exportableApp = a.newAppFn(
+		exportableApp = a.buildApp(
 			logger,
 			db,
 			traceStore,
@@ -344,7 +333,7 @@ func (a AppCreator) appExport(
 			map[int64]bool{},
 			homePath,
 			uint(1),
-			a.encCfg,
+			a.encodingConfig,
 			appOpts,
 		)
 	}
