@@ -4,11 +4,11 @@ import sdk "github.com/cosmos/cosmos-sdk/types"
 
 func SetPrefixes(accountAddressPrefix string) {
 	// Set prefixes
-	accountPubKeyPrefix    := accountAddressPrefix + "pub"
+	accountPubKeyPrefix := accountAddressPrefix + "pub"
 	validatorAddressPrefix := accountAddressPrefix + "valoper"
-	validatorPubKeyPrefix  := accountAddressPrefix + "valoperpub"
-	consNodeAddressPrefix  := accountAddressPrefix + "valcons"
-	consNodePubKeyPrefix   := accountAddressPrefix + "valconspub"
+	validatorPubKeyPrefix := accountAddressPrefix + "valoperpub"
+	consNodeAddressPrefix := accountAddressPrefix + "valcons"
+	consNodePubKeyPrefix := accountAddressPrefix + "valconspub"
 
 	// Set and seal config
 	config := sdk.GetConfig()

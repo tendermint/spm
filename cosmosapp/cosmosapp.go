@@ -15,7 +15,7 @@ type CosmosApp interface {
 	Name() string
 
 	// The application types codec.
-	// NOTE: This shoult be sealed before being returned.
+	// NOTE: This should be sealed before being returned.
 	LegacyAmino() *codec.LegacyAmino
 
 	// Application updates every begin block.

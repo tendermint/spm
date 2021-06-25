@@ -162,6 +162,7 @@ func initRootCmd(
 	)
 }
 
+// queryCommand returns the sub-command to send queries to the app
 func queryCommand(moduleBasics module.BasicManager) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:                        "query",
@@ -186,6 +187,7 @@ func queryCommand(moduleBasics module.BasicManager) *cobra.Command {
 	return cmd
 }
 
+// txCommand returns the sub-command to send transactions to the app
 func txCommand(moduleBasics module.BasicManager) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:                        "tx",
@@ -234,7 +236,7 @@ func overwriteFlagDefaults(c *cobra.Command, defaults map[string]string) {
 	}
 }
 
-// newApp is an AppCreator
+// newApp creates a new Cosmos SDK app
 func (a appCreator) newApp(
 	logger log.Logger,
 	db dbm.DB,
@@ -310,6 +312,7 @@ func (a appCreator) appExport(
 	}
 
 	if height != -1 {
+		// No specific height provided
 		exportableApp = a.buildApp(
 			logger,
 			db,
