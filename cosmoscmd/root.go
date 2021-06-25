@@ -1,14 +1,13 @@
-package cosmosapp
+package cosmoscmd
 
 import (
 	"errors"
-	"io"
-	"os"
-	"path/filepath"
-
 	"github.com/spf13/cast"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
+	"io"
+	"os"
+	"path/filepath"
 
 	tmcli "github.com/tendermint/tendermint/libs/cli"
 	"github.com/tendermint/tendermint/libs/log"
@@ -72,6 +71,34 @@ type (
 	}
 )
 
+// Option configures root command option.
+type Option func(*rootOptions)
+
+// scaffoldingOptions keeps set of options to apply scaffolding.
+type rootOptions struct {
+	// true if wasm sub-command are imported
+	wasm bool
+}
+
+func newRootOptions(options ...Option) rootOptions {
+	opts := rootOptions{}
+	opts.apply(options...)
+	return opts
+}
+
+func (s *rootOptions) apply(options ...Option) {
+	for _, o := range options {
+		o(s)
+	}
+}
+
+// WithWasm includes wasm sub-commands
+func WithWasm() Option {
+	return func(o *rootOptions) {
+		o.wasm = true
+	}
+}
+
 // NewRootCmd creates a new root command for a Cosmos SDK application
 func NewRootCmd(
 	appName,
@@ -80,7 +107,10 @@ func NewRootCmd(
 	defaultChainID string,
 	moduleBasics module.BasicManager,
 	buildApp AppBuilder,
+	options ...Option,
 ) (*cobra.Command, EncodingConfig) {
+	rootOptions := newRootOptions(options...)
+
 	// Set config for prefixes
 	SetPrefixes(accountAddressPrefix)
 
@@ -113,6 +143,7 @@ func NewRootCmd(
 		defaultNodeHome,
 		moduleBasics,
 		buildApp,
+		rootOptions,
 	)
 	overwriteFlagDefaults(rootCmd, map[string]string{
 		flags.FlagChainID:        defaultChainID,
@@ -128,6 +159,7 @@ func initRootCmd(
 	defaultNodeHome string,
 	moduleBasics module.BasicManager,
 	buildApp AppBuilder,
+	options rootOptions,
 ) {
 	authclient.Codec = encodingConfig.Marshaler
 
@@ -147,11 +179,22 @@ func initRootCmd(
 		debug.Cmd(),
 	)
 
+	// add wasm sub-commands if specified
+	if options.wasm {
+		rootCmd.AddCommand(AddGenesisWasmMsgCmd(defaultNodeHome))
+	}
+
 	a := appCreator{
 		encodingConfig,
 		buildApp,
 	}
-	server.AddCommands(rootCmd, defaultNodeHome, a.newApp, a.appExport, addModuleInitFlags)
+
+	// add server commands
+	addStartFlags := addModuleInitFlags
+	if options.wasm {
+		addStartFlags = addModuleInitFlagsWithWasm
+	}
+	server.AddCommands(rootCmd, defaultNodeHome, a.newApp, a.appExport, addStartFlags)
 
 	// add keybase, auxiliary RPC, query, and tx child commands
 	rootCmd.AddCommand(

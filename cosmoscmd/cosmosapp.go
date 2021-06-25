@@ -1,4 +1,4 @@
-package cosmosapp
+package cosmoscmd
 
 import (
 	abci "github.com/tendermint/tendermint/abci/types"

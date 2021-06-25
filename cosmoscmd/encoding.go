@@ -1,4 +1,4 @@
-package cosmosapp
+package cosmoscmd
 
 import (
 	"github.com/cosmos/cosmos-sdk/client"

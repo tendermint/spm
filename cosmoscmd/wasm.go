@@ -1,6 +1,7 @@
-package cosmosapp
+package cosmoscmd
 
 import (
+	"github.com/cosmos/cosmos-sdk/x/crisis"
 	"strings"
 
 	"github.com/CosmWasm/wasmd/x/wasm"
@@ -47,4 +48,9 @@ func GetEnabledProposals(proposalsEnabled, enableSpecificProposals string) []was
 		panic(err)
 	}
 	return proposals
+}
+
+func addModuleInitFlagsWithWasm(startCmd *cobra.Command) {
+	crisis.AddModuleInitFlags(startCmd)
+	wasm.AddModuleInitFlags(startCmd)
 }
