@@ -1,11 +1,12 @@
 package cosmosapp
 
 import (
+	"strings"
+
 	"github.com/CosmWasm/wasmd/x/wasm"
 	wasmcli "github.com/CosmWasm/wasmd/x/wasm/client/cli"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/spf13/cobra"
-	"strings"
 )
 
 // AddGenesisWasmMsgCmd returns add-wasm-genesis-message cobra Command.

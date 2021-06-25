@@ -3,14 +3,13 @@ package cosmosapp
 import (
 	"errors"
 	"io"
-	"path/filepath"
 	"os"
+	"path/filepath"
 
-	"github.com/cosmos/cosmos-sdk/store"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/x/crisis"
 	"github.com/spf13/cast"
+	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
+
 	tmcli "github.com/tendermint/tendermint/libs/cli"
 	"github.com/tendermint/tendermint/libs/log"
 	dbm "github.com/tendermint/tm-db"
@@ -24,14 +23,16 @@ import (
 	"github.com/cosmos/cosmos-sdk/server"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
 	"github.com/cosmos/cosmos-sdk/snapshots"
+	"github.com/cosmos/cosmos-sdk/store"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	authclient "github.com/cosmos/cosmos-sdk/x/auth/client"
 	authcmd "github.com/cosmos/cosmos-sdk/x/auth/client/cli"
 	"github.com/cosmos/cosmos-sdk/x/auth/types"
 	vestingcli "github.com/cosmos/cosmos-sdk/x/auth/vesting/client/cli"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
+	"github.com/cosmos/cosmos-sdk/x/crisis"
 	genutilcli "github.com/cosmos/cosmos-sdk/x/genutil/client/cli"
-	"github.com/spf13/cobra"
 )
 
 type (
@@ -66,8 +67,8 @@ type (
 
 	// appCreator is an app creator
 	appCreator struct {
-		encodingConfig   EncodingConfig
-		buildApp AppBuilder
+		encodingConfig EncodingConfig
+		buildApp       AppBuilder
 	}
 )
 
@@ -112,7 +113,7 @@ func NewRootCmd(
 		defaultNodeHome,
 		moduleBasics,
 		buildApp,
-		)
+	)
 	overwriteFlagDefaults(rootCmd, map[string]string{
 		flags.FlagChainID:        defaultChainID,
 		flags.FlagKeyringBackend: "test",
