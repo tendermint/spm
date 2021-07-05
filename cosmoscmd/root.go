@@ -353,8 +353,7 @@ func (a appCreator) appExport(
 	if !ok || homePath == "" {
 		return servertypes.ExportedApp{}, errors.New("application home not set")
 	}
-
-
+	
 	exportableApp = a.buildApp(
 		logger,
 		db,
