@@ -354,35 +354,23 @@ func (a appCreator) appExport(
 		return servertypes.ExportedApp{}, errors.New("application home not set")
 	}
 
-	if height != -1 {
-		// No specific height provided
-		exportableApp = a.buildApp(
-			logger,
-			db,
-			traceStore,
-			false,
-			map[int64]bool{},
-			homePath,
-			uint(1),
-			a.encodingConfig,
-			appOpts,
-		)
 
+	exportableApp = a.buildApp(
+		logger,
+		db,
+		traceStore,
+		height == -1, // -1: no height provided
+		map[int64]bool{},
+		homePath,
+		uint(1),
+		a.encodingConfig,
+		appOpts,
+	)
+
+	if height != -1 {
 		if err := exportableApp.LoadHeight(height); err != nil {
 			return servertypes.ExportedApp{}, err
 		}
-	} else {
-		exportableApp = a.buildApp(
-			logger,
-			db,
-			traceStore,
-			true,
-			map[int64]bool{},
-			homePath,
-			uint(1),
-			a.encodingConfig,
-			appOpts,
-		)
 	}
 
 	return exportableApp.ExportAppStateAndValidators(forZeroHeight, jailAllowedAddrs)
