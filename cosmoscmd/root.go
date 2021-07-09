@@ -179,11 +179,6 @@ func initRootCmd(
 		debug.Cmd(),
 	)
 
-	// add wasm sub-commands if specified
-	if options.wasm {
-		rootCmd.AddCommand(AddGenesisWasmMsgCmd(defaultNodeHome))
-	}
-
 	a := appCreator{
 		encodingConfig,
 		buildApp,
@@ -191,9 +186,6 @@ func initRootCmd(
 
 	// add server commands
 	addStartFlags := addModuleInitFlags
-	if options.wasm {
-		addStartFlags = addModuleInitFlagsWithWasm
-	}
 	server.AddCommands(rootCmd, defaultNodeHome, a.newApp, a.appExport, addStartFlags)
 
 	// add keybase, auxiliary RPC, query, and tx child commands
