@@ -8,6 +8,8 @@ on:
     branches:
       - master
       - develop
+
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -28,10 +30,4 @@ jobs:
           go-version: 1.16
 
       - name: Run unit tests
-        run: go test -v -coverprofile=coverage.out -covermode=atomic ./...
-
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v2
-        with:
-          fail_ci_if_error: true
-          verbose: true
+        run: go test -v ./...
